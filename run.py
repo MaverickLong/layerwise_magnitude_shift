@@ -4,6 +4,7 @@ import torch
 from torch.utils.data import DataLoader
 import torchvision
 import torchvision.transforms as transforms
+from cifar10_flip import ShiftedLabelsCIFAR10
 
 from models import model
 
@@ -15,7 +16,10 @@ NORM = ((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
 te_transforms = transforms.Compose([transforms.ToTensor(), transforms.Normalize(*NORM)])
 
 testset = torchvision.datasets.CIFAR10(root='./data', train=False, download=True, transform=te_transforms)
+cifar10_shifted_testset = ShiftedLabelsCIFAR10()
+
 testloader = DataLoader(testset, batch_size=batch_size, shuffle=False)
+cifar10_shifted_testloader = DataLoader(cifar10_shifted_testset, batch_size=batch_size, shuffle=False)
 
 model = model().to(device)
 if device == 'cpu':
@@ -60,6 +64,7 @@ clear_hooks()
 
 register_hooks()
 activations_noise = {}
+
 with torch.no_grad():
     for data in track(testloader, description="Eval IlS"):
         inputs, _ = data
@@ -70,6 +75,24 @@ for name in activations.keys():
     activations_noise[name] = activations[name]
 for hook in hooks:
     hook.remove()
+    
+clear_hooks()
+
+# Output level shift
+register_hooks()
+activations_shifted = {}
+
+with torch.no_grad():
+    for data in track(cifar10_shifted_testloader, description="Eval OlS"):
+        inputs, _ = data
+        inputs = inputs.to(device)
+        _ = model(inputs)
+for name in activations.keys():
+    activations_shifted[name] = activations[name]
+for hook in hooks:
+    hook.remove()
+    
+clear_hooks()
 
 def compute_activation_magnitudes(activations):
     magnitudes = []
@@ -81,6 +104,7 @@ def compute_activation_magnitudes(activations):
 
 layer_magnitudes = compute_activation_magnitudes(activations_original)
 layer_magnitudes_IlS = compute_activation_magnitudes(activations_noise)
+layer_magnitudes_OlS = compute_activation_magnitudes(activations_shifted)
 
 print("Activation Magnitudes:")
 print("-------------------------------------------")
@@ -90,4 +114,9 @@ for name, magnitude in layer_magnitudes:
 print("\nActivation Magnitudes w Input-level Shift")
 print("-------------------------------------------")
 for name, magnitude in layer_magnitudes_IlS:
+    print(f"{name}: {magnitude:.4f}")
+    
+print("\nActivation Magnitudes w Output-level Shift")
+print("-------------------------------------------")
+for name, magnitude in layer_magnitudes_OlS:
     print(f"{name}: {magnitude:.4f}")
