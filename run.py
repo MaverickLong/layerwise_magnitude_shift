@@ -10,22 +10,40 @@ from models import model
 
 hooks = []
 batch_size = 128
-device = 'cuda' if torch.cuda.is_available() else 'cpu'
+
+if torch.cuda.is_available():
+    device = "cuda"
+elif torch.backends.mps.is_available():
+    device = "mps"
+else:
+    device = "cpu"
 
 NORM = ((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
 te_transforms = transforms.Compose([transforms.ToTensor(), transforms.Normalize(*NORM)])
 
-testset = torchvision.datasets.CIFAR10(root='./data', train=False, download=True, transform=te_transforms)
+testset = torchvision.datasets.CIFAR10(
+    root="./data", train=False, download=True, transform=te_transforms
+)
 cifar10_shifted_testset = ShiftedLabelsCIFAR10()
 
 testloader = DataLoader(testset, batch_size=batch_size, shuffle=False)
-cifar10_shifted_testloader = DataLoader(cifar10_shifted_testset, batch_size=batch_size, shuffle=False)
+cifar10_shifted_testloader = DataLoader(
+    cifar10_shifted_testset, batch_size=batch_size, shuffle=False
+)
 
 model = model().to(device)
-if device == 'cpu':
-    model.load_state_dict(torch.load('best_weights.pth', map_location=torch.device('cpu')))
+print(device)
+if device == "cpu":
+    model.load_state_dict(
+        torch.load("best_weights.pth", map_location=torch.device("cpu"))
+    )
+elif device == "mps":
+    model.load_state_dict(
+        torch.load("best_weights.pth", map_location=torch.device("mps"))
+    )
 else:
-    model.load_state_dict(torch.load('best_weights.pth'))
+    model.load_state_dict(torch.load("best_weights.pth"))
+
 
 def register_hooks():
     global hooks
@@ -33,17 +51,22 @@ def register_hooks():
         hook = layer.register_forward_hook(get_activation(name))
         hooks.append(hook)
 
+
 def clear_hooks():
     global hooks
     hooks = []
 
+
 def get_activation(name):
     def hook(module, input, output):
         activations[name] = output.detach().cpu().numpy()
+
     return hook
+
 
 def noise(tensor):
     return tensor + torch.randn(tensor.size())
+
 
 activations = {name: None for name, _ in model.named_children()}
 
@@ -75,7 +98,7 @@ for name in activations.keys():
     activations_noise[name] = activations[name]
 for hook in hooks:
     hook.remove()
-    
+
 clear_hooks()
 
 # Output level shift
@@ -91,8 +114,9 @@ for name in activations.keys():
     activations_shifted[name] = activations[name]
 for hook in hooks:
     hook.remove()
-    
+
 clear_hooks()
+
 
 def compute_activation_magnitudes(activations):
     magnitudes = []
@@ -101,6 +125,7 @@ def compute_activation_magnitudes(activations):
             magnitude = np.abs(activation).mean()
             magnitudes.append((name, magnitude))
     return magnitudes
+
 
 layer_magnitudes = compute_activation_magnitudes(activations_original)
 layer_magnitudes_IlS = compute_activation_magnitudes(activations_noise)
@@ -115,7 +140,7 @@ print("\nActivation Magnitudes w Input-level Shift")
 print("-------------------------------------------")
 for name, magnitude in layer_magnitudes_IlS:
     print(f"{name}: {magnitude:.4f}")
-    
+
 print("\nActivation Magnitudes w Output-level Shift")
 print("-------------------------------------------")
 for name, magnitude in layer_magnitudes_OlS:
