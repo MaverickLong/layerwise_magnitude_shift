@@ -9,9 +9,12 @@ te_transforms = transforms.Compose([transforms.ToTensor(), transforms.Normalize(
 
 
 class ShiftedLabelsCIFAR10:
-    def __init__(self):
+
+    def __init__(
+        self, root="../data", train=False, download=True, transform=te_transforms
+    ):
         self.original_dataset = torchvision.datasets.CIFAR10(
-            root="./data", train=False, download=True, transform=te_transforms
+            root=root, train=train, download=download, transform=transform
         )
 
     def __len__(self):

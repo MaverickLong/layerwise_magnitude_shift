@@ -4,9 +4,13 @@ import torch
 from torch.utils.data import DataLoader
 import torchvision
 import torchvision.transforms as transforms
-from cifar10_flip import ShiftedLabelsCIFAR10
 
-from models import model
+import sys
+import os
+
+sys.path.append(os.path.abspath("../model"))
+from resnet import model
+from cifar10_flip import ShiftedLabelsCIFAR10
 
 hooks = []
 batch_size = 128
@@ -22,7 +26,7 @@ NORM = ((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
 te_transforms = transforms.Compose([transforms.ToTensor(), transforms.Normalize(*NORM)])
 
 testset = torchvision.datasets.CIFAR10(
-    root="./data", train=False, download=True, transform=te_transforms
+    root="../data", train=False, download=True, transform=te_transforms
 )
 cifar10_shifted_testset = ShiftedLabelsCIFAR10()
 
@@ -35,14 +39,14 @@ model = model().to(device)
 print(device)
 if device == "cpu":
     model.load_state_dict(
-        torch.load("best_weights.pth", map_location=torch.device("cpu"))
+        torch.load("../model/cifar10c.pth", map_location=torch.device("cpu"))
     )
 elif device == "mps":
     model.load_state_dict(
-        torch.load("best_weights.pth", map_location=torch.device("mps"))
+        torch.load("../model/cifar10c.pth", map_location=torch.device("mps"))
     )
 else:
-    model.load_state_dict(torch.load("best_weights.pth"))
+    model.load_state_dict(torch.load("../model/cifar10c.pth"))
 
 
 def register_hooks():
