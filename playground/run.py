@@ -39,14 +39,14 @@ model = model().to(device)
 print(device)
 if device == "cpu":
     model.load_state_dict(
-        torch.load("../model/cifar10c.pth", map_location=torch.device("cpu"))
+        torch.load("../model/cifar10.pth", map_location=torch.device("cpu"))
     )
 elif device == "mps":
     model.load_state_dict(
-        torch.load("../model/cifar10c.pth", map_location=torch.device("mps"))
+        torch.load("../model/cifar10.pth", map_location=torch.device("mps"))
     )
 else:
-    model.load_state_dict(torch.load("../model/cifar10c.pth"))
+    model.load_state_dict(torch.load("../model/cifar10.pth"))
 
 
 def register_hooks():

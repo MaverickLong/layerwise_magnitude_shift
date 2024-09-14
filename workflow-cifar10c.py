@@ -13,6 +13,8 @@ import torchvision.transforms as transforms
 
 from torch_uncertainty.datasets.classification.cifar.cifar_c import CIFAR10C
 
+import copy
+
 import sys
 import os
 
@@ -49,10 +51,11 @@ train, val, _ = random_split(cifarc, (1000, 1000, len(cifarc) - 2000))
 
 # Init & load model
 model = model()
-model.load_state_dict(torch.load("model/cifar10c.pth", map_location=device))
+model.load_state_dict(torch.load("model/cifar10.pth", map_location=device))
 
 criterion = nn.CrossEntropyLoss()
 optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
+optimizer_fc = torch.optim.Adam(model.parameters(), lr=0.01)
 
 # Feeding data
 train_loader = DataLoader(train, batch_size=batch_size, shuffle=True)
@@ -76,13 +79,12 @@ else:
 # Send model to device
 model = model.to(device)
 
-
 # Pre-Training loop
 val_loss_list = []
 val_acc_list = []
 
 # Excluding Pre-Validation. At least 1.
-num_epochs = 10
+num_epochs = 1
 
 # Pre-Validation
 model.eval()
@@ -117,11 +119,11 @@ for epoch in range(num_epochs):
         inputs = inputs.to(device)
         labels = labels.to(device)
 
-        optimizer.zero_grad()
+        optimizer_fc.zero_grad()
         outputs = model(inputs)
         loss = criterion(outputs, labels)
         loss.backward()
-        optimizer.step()
+        optimizer_fc.step()
 
         running_loss += loss.item()
 
@@ -156,48 +158,63 @@ print(val_loss_list)
 print("Acc History:")
 print(val_acc_list)
 
+SIGNIFICANT_LOSS_RATIO = 1.5
 SIGNIFICANT_LOSS_DIFF = 2
 
-if (val_loss_list[0] / val_loss_list[-1]) > SIGNIFICANT_LOSS_DIFF:
-    print("Could be considered as significant. Exit for now.")
-    exit()
+if (val_loss_list[0] / val_loss_list[-1]) > SIGNIFICANT_LOSS_RATIO or (
+    val_loss_list[0] - val_loss_list[-1]
+) > SIGNIFICANT_LOSS_DIFF:
+    print("Could be considered as significant. Continuing...")
+    optimizer = optimizer_fc
+else:
+    print("Tuning FC is not effective. switch to activation mode.")
 
-print("Tuning FC is not effective. switch to activation mode.")
+    model.load_state_dict(torch.load("model/cifar10.pth", map_location=device))
 
-model.load_state_dict(torch.load("model/cifar10c.pth", map_location=device))
+    model.eval()
+    # Output level shift
+    register_hooks(model)
 
-model.eval()
-# Output level shift
-register_hooks(model)
+    with torch.no_grad():
+        for data in track(val_loader, description="Eval Cifar10C Activations"):
+            inputs, _ = data
+            inputs = inputs.to(device)
+            _ = model(inputs)
 
-with torch.no_grad():
-    for data in track(val_loader, description="Eval Cifar10C Activations"):
-        inputs, _ = data
-        inputs = inputs.to(device)
-        _ = model(inputs)
+    clear_hooks()
 
-clear_hooks()
+    layer_magnitudes = compute_activation_magnitudes()
 
-layer_magnitudes = compute_activation_magnitudes()
+    print("\nActivation Magnitudes")
+    print("-------------------------------------------")
 
-print("\nActivation Magnitudes")
-print("-------------------------------------------")
+    activate_layer = []
+    overall_magnitude = 0
 
-max_name = ""
-max_magnitude = 0
+    for name, magnitude in layer_magnitudes:
+        if name.startswith("layer"):
+            print(name + ": " + str(magnitude))
+            overall_magnitude += magnitude
 
-for name, magnitude in layer_magnitudes:
-    print(name + " " + str(magnitude))
-    if magnitude > max_magnitude and name != "fc":
-        max_name = name
-        max_magnitude = magnitude
+    avg_magnitude = overall_magnitude / 3
 
-for name, param in model.named_parameters():
-    if name.startswith(max_name):
-        param.requires_grad = True
-    else:
+    for para_name, param in model.named_parameters():
         param.requires_grad = False
-    print(name + " " + str(param.requires_grad))
+
+    for name, magnitude in layer_magnitudes:
+        if name.startswith("layer") and magnitude > avg_magnitude:
+            for para_name, param in model.named_parameters():
+                if para_name.startswith(name):
+                    param.requires_grad = True
+            print("Activated: " + name)
+
+
+# Initialize Variables for EarlyStopping
+best_loss = float("inf")
+best_model_weights = None
+patience = 2
+
+num_epochs = 10
 
 for epoch in range(num_epochs):
     model.train()
@@ -233,6 +250,16 @@ for epoch in range(num_epochs):
             _, predicted = torch.max(outputs.data, 1)
             total += labels.size(0)
             correct += (predicted == labels).sum().item()
+
+    # Early stopping
+    if val_loss < best_loss:
+        best_loss = val_loss
+        best_model_weights = copy.deepcopy(model.state_dict())
+        patience = 2
+    else:
+        patience -= 1
+        if patience == 0:
+            break
 
     val_loss_list.append(val_loss / len(val_loader))
     val_acc_list.append(100 * correct / total)

@@ -62,7 +62,7 @@ cifar_val_loader = DataLoader(cifar_val_sub, batch_size=batch_size, shuffle=Fals
 
 # Init & load model
 model = model()
-model.load_state_dict(torch.load("../model/cifar10c.pth", map_location=device))
+model.load_state_dict(torch.load("../model/cifar10.pth", map_location=device))
 
 num_features = model.fc.in_features
 # 10 binary labels
