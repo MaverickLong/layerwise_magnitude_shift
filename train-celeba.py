@@ -64,7 +64,7 @@ optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
 train_loader = DataLoader(train, batch_size=batch_size, shuffle=True)
 val_loader = DataLoader(val, batch_size=batch_size, shuffle=False)
 
-model.load_state_dict(torch.load("model/imagenet.pth", map_location=device))
+model.load_state_dict(torch.load("model/imagenet.pth", map_location=device, weights_only=True))
 
 num_features = model.fc.in_features
 # Getting our shiny new layer

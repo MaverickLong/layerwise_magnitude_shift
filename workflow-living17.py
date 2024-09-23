@@ -85,7 +85,7 @@ train_subset, val_subset = breeds_utils.make_subsets(
                                     custom_class_args=dataset_target.custom_class_args)
 
 # Organize images by category
-category_dict = {i: [] for i in range(num_classes)}  # 30 categories of entity30
+category_dict = {i: [] for i in range(num_classes)}  # categories of living17
 
 total = len(train_subset)
 
@@ -356,7 +356,7 @@ num_epochs = 10
 # Initialize Variables for EarlyStopping
 best_loss = float("inf")
 best_model_weights = None
-original_patience = 2
+original_patience = 4
 patience = original_patience
 
 for epoch in range(num_epochs):

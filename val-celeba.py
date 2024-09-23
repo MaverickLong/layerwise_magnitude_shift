@@ -67,7 +67,7 @@ num_features = model.fc.in_features
 # Getting our shiny new layer
 model.fc = nn.Linear(num_features, num_classes)
 
-model.load_state_dict(torch.load("model/celeba-via-imagenet.pth", map_location=device))
+model.load_state_dict(torch.load("model/celeba-via-imagenet.pth", map_location=device, weights_only=True))
 
 model.to(device)
 

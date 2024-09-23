@@ -189,7 +189,7 @@ num_epochs_source = 30
 #     print(f"Val Accuracy: {100 * correct / total:.2f}%")
 
 # torch.save(best_model_weights, "model/living17-subpop-via-imagenet.pth")
-model.load_state_dict(torch.load("model/living17-subpop-via-imagenet.pth", map_location=device))
+model.load_state_dict(torch.load("model/living17-subpop-via-imagenet.pth", map_location=device, weights_only=True))
 
 model.to(device)
 # ...Following by our Fine-Tuning
@@ -297,7 +297,7 @@ SIGNIFICANT_LOSS_DIFF = 2
 
 print("Tuning FC is not effective. switch to activation mode.")
 
-model.load_state_dict(torch.load("model/living17-subpop-via-imagenet.pth", map_location=device))
+model.load_state_dict(torch.load("model/living17-subpop-via-imagenet.pth", map_location=device, weights_only=True))
 
 model.eval()
 # Output level shift

@@ -52,7 +52,7 @@ val_loader = DataLoader(val_sub, batch_size=batch_size, shuffle=False)
 
 # Init & load model
 model = model()
-model.load_state_dict(torch.load("best_weights.pth", map_location=device))
+model.load_state_dict(torch.load("best_weights.pth", map_location=device, weights_only=True))
 
 num_features = model.fc.in_features
 # 40 binary labels

@@ -62,7 +62,7 @@ val = Subset(cifar_val, val_indices)
 
 # Init & load model
 model = model()
-model.load_state_dict(torch.load("model/cifar10.pth", map_location=device))
+model.load_state_dict(torch.load("model/cifar10.pth", map_location=device, weights_only=True))
 
 criterion = nn.CrossEntropyLoss()
 optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
@@ -181,7 +181,7 @@ if (val_loss_list[0] / val_loss_list[-1]) > SIGNIFICANT_LOSS_RATIO or (
 else:
     print("Tuning FC is not effective. switch to activation mode.")
 
-    model.load_state_dict(torch.load("model/cifar10.pth", map_location=device))
+    model.load_state_dict(torch.load("model/cifar10.pth", map_location=device, weights_only=True))
 
     model.eval()
     # Output level shift

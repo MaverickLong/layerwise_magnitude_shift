@@ -99,7 +99,7 @@ val = torchvision.datasets.CelebA(
 model = model()
 num_features = model.fc.in_features
 model.fc = nn.Linear(num_features, 40)
-model.load_state_dict(torch.load("model/celeba.pth", map_location=device))
+model.load_state_dict(torch.load("model/celeba.pth", map_location=device, weights_only=True))
 
 criterion = nn.BCEWithLogitsLoss()
 optimizer_fc = torch.optim.Adam(model.parameters(), lr=0.01)

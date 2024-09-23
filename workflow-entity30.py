@@ -188,7 +188,7 @@ for epoch in range(num_epochs_source):
     print(f"Val Loss: {val_loss/len(val_loader_source):.4f}")
     print(f"Val Accuracy: {100 * correct / total:.2f}%")
 
-torch.save(best_model_weights, "model/entity30-subpop-via-imagenet.pth")
+torch.save(best_model_weights, "model/entity30-subpop-via-imagenet-2.pth")
 model.load_state_dict(best_model_weights)
 
 # ...Following by our Fine-Tuning
@@ -306,7 +306,8 @@ if (val_loss_list[0] / val_loss_list[-1]) > SIGNIFICANT_LOSS_RATIO or (
 else:
     print("Tuning FC is not effective. switch to activation mode.")
     
-    model.load_state_dict(best_model_weights)
+    if not fc_kinda_useful:
+        model.load_state_dict(best_model_weights)
 
     model.eval()
     # Output level shift
@@ -349,6 +350,7 @@ else:
                 param.requires_grad = True
                 break
         if fc_kinda_useful and name.startswith("fc"):
+            print("enabled fc tuning")
             param.requires_grad = True
 
 num_epochs = 10
@@ -356,7 +358,7 @@ num_epochs = 10
 # Initialize Variables for EarlyStopping
 best_loss = float("inf")
 best_model_weights = None
-original_patience = 2
+original_patience = 4
 patience = original_patience
 
 for epoch in range(num_epochs):
