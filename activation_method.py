@@ -34,7 +34,8 @@ def compute_activation_magnitudes():
     magnitudes = []
     for name, activation in activations.items():
         if activation is not None:
-            magnitude = np.abs(activation).mean()
+            print(activation)
+            magnitude = np.abs(activation.mean())
             magnitudes.append((name, magnitude))
     return magnitudes
 

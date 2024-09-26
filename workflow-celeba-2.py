@@ -69,7 +69,7 @@ def get_balanced_blond_subset(dataset, num_samples_per_group=None):
     }
 
     # Iterate through the dataset and separate indices based on attributes
-    for idx, (img, attr) in enumerate(dataset):
+    for idx, (_, attr) in enumerate(dataset):
         hair_color = attr[blond_hair_idx].item()  # blond_hair
         gender = attr[gender_idx].item()  # gender
         group_indices[(hair_color, gender)].append(idx)

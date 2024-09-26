@@ -130,7 +130,7 @@ for idx in range(len(layer_magnitudes_src)):
     name, magnitude_src = layer_magnitudes_src[idx]
     _, magnitude_tgt = layer_magnitudes_tgt[idx]
     if name.startswith("layer") or name.startswith("fc"):
-        diff = magnitude_tgt - magnitude_src
+        diff = abs(magnitude_tgt - magnitude_src)
         print(f"{name}: {str(diff)}")
         if diff > max_magnitude:
             max_magnitude = diff
